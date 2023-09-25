@@ -29,5 +29,17 @@ plot(pressure)
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
+<<<<<<< HEAD
 try Github 
 
+=======
+
+
+
+
+```{r}
+
+plot
+blah 
+```
+>>>>>>> 98be8fcb4e4899bb881a4e10ccab089b26dc5fbd

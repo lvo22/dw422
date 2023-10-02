@@ -1,0 +1,77 @@
+---
+title: "Wrangling_Price_Data"
+output: pdf_document
+date: "2023-10-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+```
+
+## Exchange Data
+
+
+
+```{r prices}
+exchange_rates <- read.csv("exchange_rates.csv")
+prices
+
+```
+
+##  Data
+
+
+```{r title}
+
+summary(exchange_rates)
+
+```
+```{r title}
+# 
+
+head(exchange_rates)
+
+```
+
+
+```{r title}
+# Select only the columns we need 
+
+exchange_rates <- exchange_rates %>%
+  select(Country, Currency, Calendar.Year, Exchange.Rate)
+exchange_rates
+
+```
+
+
+```{r title}
+# group by country and year, average the exchange rate
+
+class(exchange_rates$Exchange.Rate)
+
+exchange_rates_grouped <- exchange_rates %>%
+  group_by(Country, Calendar.Year)  %>%
+  summarize(average_fx = round(mean(Exchange.Rate), 2))
+exchange_rates_grouped  
+            
+            
+
+
+```
+
+
+
+
+
+```{r title}
+
+
+
+
+```
+
+
+

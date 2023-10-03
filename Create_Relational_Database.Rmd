@@ -48,6 +48,7 @@ cost <- read.csv("3. cost_of_cigarettes_2020_WHO.csv")
 death <- read.csv("6. Prob_dying_diseases.csv")
 smoking_prev <- read.csv("8. Age-standardized estimates of current tobacco use, tobacco smoking and cigarette smoking.csv")
 life_expectancy <- read.csv("9. Life expectancy WHO.csv")
+exchange_rates <- read.csv("exchange_rates.csv")
 ```
 
 ##  1.1 Widening and Cleaning Smoking Prevalance
@@ -129,11 +130,6 @@ death_3 <- death_2 %>%
 death_3
 ```
 
-## 1.4 Widening and Cleaning Life Expectancy
-
-```{r}
-life_expectancy
-```
 
 ```{r}
 # Getting rid of empty columns
@@ -157,6 +153,11 @@ life_expectancy_3 <- life_expectancy_2 %>%
     rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period, GenderCode = Dim1ValueCode) 
 life_expectancy_3
 ```
+
+
+
+
+
 
 ## 2.0 Creating Dimensional Tables
 
@@ -280,6 +281,37 @@ continent_dimensional_table <- continents %>%
     rename(ContinentCode = ParentLocationCode)
 continent_dimensional_table
 ```
+
+
+## 2.5 Exchange Rates
+
+```{r}
+# Select only the columns we need 
+exchange_rates <- exchange_rates %>%
+  select(Country, Currency, Calendar.Year, Exchange.Rate)
+exchange_rates
+
+# group by country and year, average the exchange rate
+exchange_rates_grouped <- exchange_rates %>%
+  group_by(Country, Calendar.Year)  %>%
+  summarize(average_fx = round(mean(Exchange.Rate), 2))
+exchange_rates_grouped 
+
+```
+```{r}
+# add country code
+exchange_rates_grouped  <- exchange_rates_grouped  %>% mutate(Country = tolower(Country))
+colnames(exchange_rates_grouped)[colnames(exchange_rates_grouped) == "Country"] <- "Location.x"
+
+exchange_rates_grouped <- exchange_rates_grouped %>%
+  left_join(
+    countries %>% select(SpatialDimValueCode, Location.x) %>%
+    mutate(Location.x = tolower(Location.x)),
+    by = "Location.x")
+exchange_rates_grouped
+
+```
+
 
 ## 3.0 Making Fact Tables - Subsets (Trial)
 

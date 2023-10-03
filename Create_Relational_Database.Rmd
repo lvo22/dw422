@@ -1,0 +1,364 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.15.0
+  kernelspec:
+    display_name: R
+    language: R
+    name: ir
+---
+
+# Creating the Relational Database
+
+```{r}
+## PROCESS
+# widen the table 
+# widen every table and clean them up
+# (create subsets to try first) add the rest of the data - gender will become an issue
+# Additional things to check - if all countries encoded in the same 
+# unique countries
+# unique continents
+# unique genders
+# unique years 
+# create the primary keys 
+
+
+## THINGS LEFT TO DO
+# Join tables together and check everything is the same as it was before
+# general QAs
+# spot checks of numbers if it makes sense
+# exchange rate table 
+# write a lot more about the process
+```
+
+## 0 Reading CSVs
+
+```{r}
+library(tidyverse)
+library(visdat)
+```
+
+```{r}
+cost <- read.csv("3. cost_of_cigarettes_2020_WHO.csv")
+#5. National taxes on a pack of 20 cigarettes.csv
+death <- read.csv("6. Prob_dying_diseases.csv")
+smoking_prev <- read.csv("8. Age-standardized estimates of current tobacco use, tobacco smoking and cigarette smoking.csv")
+life_expectancy <- read.csv("9. Life expectancy WHO.csv")
+```
+
+##  1.1 Widening and Cleaning Smoking Prevalance
+
+```{r}
+# Getting rid of empty columns
+empty_columns <- colSums(is.na(smoking_prev) | smoking_prev == "") == nrow(smoking_prev)
+smoking_prev_1 <- smoking_prev[, !empty_columns]
+smoking_prev_1
+```
+
+```{r}
+# Getting rid of redundant columns. We are only interested in the codes and the final values
+smoking_prev_2 <- smoking_prev_1 %>%
+  select(-ValueType, -Location.type, -Period.type, -IndicatorCode, -ParentLocation, -Location, -Dim1.type, -Dim1, -FactValueNumeric, -FactComments, -Language, -DateModified, -IsLatestYear)
+smoking_prev_2
+```
+
+```{r}
+# Making the table longer
+smoking_prev_3 <- smoking_prev_2 %>%
+    spread(key = Indicator,
+          value = "Value") %>%
+    rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period, GenderCode = Dim1ValueCode) %>%
+    rename("Estimate current cigarette smoking prevalence %" = "Estimate of current cigarette smoking prevalence (%) (age-standardized rate)") %>%
+    rename("Estimate current tobacco smoking prevalence %" = "Estimate of current tobacco smoking prevalence (%) (age-standardized rate)") %>%
+    rename("Estimate current tobacco use prevalence %" = "Estimate of current tobacco use prevalence (%) (age-standardized rate)")
+smoking_prev_3
+```
+
+## 1.2 Widening and Cleaning Cost
+
+```{r}
+# Getting rid of empty columns
+empty_columns <- colSums(is.na(cost) | cost == "") == nrow(cost)
+cost_1 <- cost[, !empty_columns]
+cost_1 %>% head(2)
+```
+
+```{r}
+# Getting rid of redundant columns. We are only interested in the codes and the final values
+cost_2 <- cost_1 %>%
+  select(-ValueType, -Location.type, -Period.type, -IndicatorCode, -ParentLocation, -Location, -FactValueNumeric, -FactValueTranslationID, -Language, -DateModified, -IsLatestYear)
+cost_2
+```
+
+```{r}
+# Making the table longer
+cost_3 <- cost_2 %>%
+    spread(key = Indicator,
+          value = "Value") %>%
+    rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period)
+cost_3
+```
+
+## 1.3 Widening and Cleaning Death
+
+```{r}
+# Getting rid of empty columns
+empty_columns <- colSums(is.na(death) | death == "") == nrow(death)
+death_1 <- death[, !empty_columns]
+death_1
+```
+
+```{r}
+# Getting rid of redundant columns. We are only interested in the codes and the final values
+death_2 <- death_1 %>%
+  select(-IndicatorCode, -ValueType,  -ParentLocation, -Location.type, -Location, -Period.type, -Dim1.type, -Dim1, -Value, -Language, -DateModified, -FactValueNumericLow, -FactValueNumericHigh, -IsLatestYear)
+death_2
+```
+
+```{r}
+# Making the table longer
+death_3 <- death_2 %>%
+    spread(key = Indicator,
+          value = "FactValueNumeric") %>%
+    rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period, GenderCode = Dim1ValueCode) %>%
+    rename("Probability (%) of dying" = "Probability (%) of dying between age 30 and exact age 70 from any of cardiovascular disease, cancer, diabetes, or chronic respiratory disease")
+death_3
+```
+
+## 1.4 Widening and Cleaning Life Expectancy
+
+```{r}
+life_expectancy
+```
+
+```{r}
+# Getting rid of empty columns
+empty_columns <- colSums(is.na(life_expectancy) | life_expectancy == "") == nrow(life_expectancy)
+life_expectancy_1 <- life_expectancy[, !empty_columns]
+life_expectancy_1
+```
+
+```{r}
+# Getting rid of redundant columns. We are only interested in the codes and the final values
+life_expectancy_2 <- life_expectancy_1 %>%
+  select(-IndicatorCode, -ValueType,  -ParentLocation, -Location.type, -Location, -Period.type, -Dim1.type, -Dim1, -Value, -Language, -DateModified, -IsLatestYear)
+life_expectancy_2
+```
+
+```{r}
+# Making the table longer
+life_expectancy_3 <- life_expectancy_2 %>%
+    spread(key = Indicator,
+          value = "FactValueNumeric") %>%
+    rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period, GenderCode = Dim1ValueCode) 
+life_expectancy_3
+```
+
+## 2.0 Creating Dimensional Tables
+
+
+## 2.1 Creating Country Dimension Table
+
+
+In order to create the country dimension table, the unique combinations of country, country code and continent code of each table has to be obtained. Then these combinations need to be checked against each other to ensure that each code relate to the same country. In order to this, the distinct combinations will be joined together to the shared code with full outer joints so that every code can be considered. Then the "get_unique_name" function has been created to check whether the country names are the same, and if not to result "Conflict". 
+
+```{r}
+# Getting country, continent code, country code combinations
+smoking_countries <- smoking_prev_1 %>% distinct(SpatialDimValueCode, Location, ParentLocationCode) 
+cost_countries <- cost_1 %>% distinct(SpatialDimValueCode, Location, ParentLocationCode) 
+death_countries <- death_1 %>% distinct(SpatialDimValueCode, Location, ParentLocationCode) 
+life_countries <- life_expectancy_1 %>% distinct(SpatialDimValueCode, Location, ParentLocationCode)
+```
+
+```{r}
+countries <- full_join(smoking_countries, death_countries, by = "SpatialDimValueCode")
+countries <- full_join(countries, life_countries, by = "SpatialDimValueCode")
+countries <- full_join(countries, cost_countries, by = "SpatialDimValueCode")
+countries
+```
+
+```{r}
+get_unique_name = function(item_1, item_2, item_3, item_4) {
+    """Returns item if all items the same, if not gives conflict. If all NA's gives NA"""
+    item_og = c(item_1, item_2, item_3, item_4)
+
+    unique_items <- unique(na.omit(item_og))
+    num_unique_items <- length(unique_items)
+
+    item <- ifelse(num_unique_items == 1, unique_items, "Conflict")
+    return(item)
+
+}
+```
+
+```{r}
+# Mutating to get the unique country name and continent code and general cleaning
+country_dimension_table <- countries %>% 
+    rowwise() %>%
+    mutate(CountryName = get_unique_name(Location.x, Location.y, Location.x.x, Location.y.y)) %>%
+    mutate(ContinentCode = get_unique_name(ParentLocationCode.x, ParentLocationCode.y, ParentLocationCode.x.x, ParentLocationCode.y.y)) %>%
+    select(SpatialDimValueCode, CountryName, ContinentCode) %>%
+    rename(CountryCode = SpatialDimValueCode)
+country_dimension_table
+```
+
+```{r}
+# There are no conflicts, which means each code relate to a country that is consistent in all tables
+country_dimension_table %>% filter(is.na(CountryName) | CountryName == "Conflict" | ContinentCode == "Conflict" | is.na(ContinentCode))
+```
+
+## 2.2 Years table
+
+```{r}
+# Getting the unique years into a dataframe
+smoking_years <- smoking_prev_1$Period %>% unique()
+cost_years <- cost_1$Period %>% unique()
+death_years <- death_1$Period %>% unique()
+life_years <- life_expectancy_1$Period %>% unique()
+
+years_dimensional_table <- data.frame(Years = c(smoking_years, cost_years, death_years, life_years)) %>% unique() %>% arrange(Years)
+                                                                                                           
+years_dimensional_table
+```
+
+## 2.3 Gender
+
+```{r}
+# Getting unique combinations of gendercode and gender
+smoking_gender <- smoking_prev_1 %>% distinct(Dim1, Dim1ValueCode) 
+death_gender <- death_1 %>% distinct(Dim1, Dim1ValueCode) 
+life_gender <- life_expectancy_1 %>% distinct(Dim1, Dim1ValueCode)
+life_gender
+```
+
+```{r}
+genders <- full_join(smoking_gender, death_gender, by = "Dim1ValueCode")
+genders <- full_join(genders, life_gender, by = "Dim1ValueCode")
+genders
+```
+
+```{r}
+# Mutating to get the unique genders and continent code and general cleaning
+gender_dimension_table <- genders %>% 
+    rowwise() %>%
+    mutate(Gender = get_unique_name(Dim1.x, Dim1.y, Dim1, NA)) %>%
+    select(Dim1ValueCode, Gender) %>%
+    rename(GenderCode = Dim1ValueCode)
+gender_dimension_table
+```
+
+## 2.4 Continents
+
+
+The same process that has been done to countries is done here. 
+
+```{r}
+# Getting unique combinations of continent code and continents
+smoking_continents <- smoking_prev_1 %>% distinct(ParentLocationCode, ParentLocation) 
+cost_continents <- cost_1 %>% distinct(ParentLocationCode, ParentLocation) 
+death_continents <- death_1 %>% distinct(ParentLocationCode, ParentLocation) 
+life_continents <- life_expectancy_1 %>% distinct(ParentLocationCode, ParentLocation)
+```
+
+```{r}
+continents <- full_join(smoking_continents, cost_continents, by = "ParentLocationCode")
+continents <- full_join(continents, death_continents, by = "ParentLocationCode")
+continents <- full_join(continents, life_continents, by = "ParentLocationCode")
+continents
+```
+
+```{r}
+# Mutating to get the unique continents and general cleaning
+continent_dimensional_table <- continents %>% 
+    rowwise() %>%
+    mutate(ContinentName = get_unique_name(ParentLocation.x, ParentLocation.y, ParentLocation.x.x, ParentLocation.y.y)) %>%
+    select(ParentLocationCode, ContinentName) %>%
+    rename(ContinentCode = ParentLocationCode)
+continent_dimensional_table
+```
+
+## 3.0 Making Fact Tables - Subsets (Trial)
+
+
+The smoking prevalence, life expectancy and probability of death tables will be combined to one fact table. The cost table will be kept separate as it doesn't have gender. For the trial, a combination that has a value in each table has been chosen. In this case, continent in Africa, ZWE as country and both sexes as gender. This way we can check that the values from each table connects properly. As all the values should be in one row for this specific combination. 
+
+```{r}
+# Creating the subset for the specific combination (Contient = AFR, Country = ZWE, Gender = BTSX)
+smoking_prev_3_subset <- smoking_prev_3 %>% filter((ContinentCode == "AFR") & (CountryCode == "ZWE") & (GenderCode == "BTSX") & (Year == 2010))
+life_expectancy_3_subset <- life_expectancy_3 %>% filter((ContinentCode == "AFR") & (CountryCode == "ZWE") & (GenderCode == "BTSX") & (Year == 2010))
+death_3_subset <- death_3 %>% filter((ContinentCode == "AFR") & (CountryCode == "ZWE") & (GenderCode == "BTSX") & (Year == 2010))
+```
+
+```{r}
+smoking_prev_3_subset
+life_expectancy_3_subset
+death_3_subset
+```
+
+```{r}
+trial_2 <- full_join(smoking_prev_3_subset, life_expectancy_3_subset, by = c("ContinentCode", "CountryCode", "Year", "GenderCode"))
+trial_3 <- full_join(trial_2, death_3_subset, by = c("ContinentCode", "CountryCode", "Year", "GenderCode"))
+trial_3
+
+## it works - all in one row 
+```
+
+## 3.1 Joining Tables - Full set
+
+```{r}
+smoke_lifexpect <- full_join(smoking_prev_3, life_expectancy_3, by = c("ContinentCode", "CountryCode", "Year", "GenderCode"))
+smoke_lifexpect_death <- full_join(smoke_lifexpect, death_3, by = c("ContinentCode", "CountryCode", "Year", "GenderCode"))
+smoke_lifexpect_death
+```
+
+## 4.0 Creating Primary Keys
+
+
+We are going to keep the cost table separate to the smoke_lifexpect_death table as the cost table does not have a gender. 
+
+
+### 4.1 Table 1 - Costs of tobacco
+
+```{r}
+cost_3
+```
+
+```{r}
+cost_cigs <- cost_3 %>%
+  mutate(CostID = paste(CountryCode, Year),
+         CostID = str_replace_all(CostID, " ", "")) %>%
+  select(CostID, everything(), -ContinentCode, -CountryCode, -Year)
+
+cost_cigs
+```
+
+### 4.2 Table 2 - Smoking Prevalence, Life Expectancy, Probablity of Death
+
+```{r}
+smoke_lifexpect_death_wID <- smoke_lifexpect_death %>%
+  mutate(ID = paste(CountryCode, Year, substr(GenderCode, 1, 1)),
+         ID = str_replace_all(ID, " ", "")) %>%
+  select(ID, everything(), -ContinentCode, -CountryCode, -Year, -GenderCode)
+
+smoke_lifexpect_death_wID
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```

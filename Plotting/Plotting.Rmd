@@ -1,0 +1,292 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.15.0
+  kernelspec:
+    display_name: R
+    language: R
+    name: ir
+---
+
+# Visualisations
+
+
+
+
+```{r vscode={'languageId': 'r'}}
+library(tidyverse)
+library(visdat)
+```
+## 0 Reading CSVs
+
+```{r vscode={'languageId': 'r'}}
+fact_table <- read.csv("fact-table.csv")
+country_dimension_table <- read.csv("country_dimension_table.csv")
+years_dimensional_table <- read.csv("years_dimensional_table.csv")
+gender_dimension_table <- read.csv("gender_dimension_table.csv")
+continent_dimensional_table <- read.csv("continent_dimensional_table.csv")
+fx_dimensional_table <- read.csv("fx_dimensional_table.csv")
+```
+
+```{r vscode={'languageId': 'r'}}
+fact_table
+```
+
+##  1.1 Get Dataframe for Plotting and Calculate Prices
+
+```{r vscode={'languageId': 'r'}}
+# calculate price per country for 2020
+
+# select what we need from fact table (ID, CountryCode, ContinentCode, LifeExpectancy and Mortality for 2019, Prevalence of Smoking, Prices and Tax for 2020 )
+fact_table1 = fact_table %>% 
+             filter(Year == 2020, GenderCode == "BTSX") %>% 
+             select(CountryCode,  M_Est_tob_curr_std, R_Price_mp_estimate, R_total_tax_estimate )
+fact_table1
+
+# select what we need from fact table (year 2020, both genders, prevalence, price, taxes)
+fact_table2 = fact_table %>% 
+             filter(Year == 2019, GenderCode == "BTSX") %>% 
+             select(ID, CountryCode, ContinentCode,  WHOSIS_000001, NCDMORT3070 )
+fact_table2
+
+# join to one table
+fact_table3 = fact_table2 %>%
+           left_join(fact_table1 , by = "CountryCode")
+fact_table3
+
+```
+
+```{r vscode={'languageId': 'r'}}
+# select exchange rates for 2020 in fx table
+fx_dimensional_table1 = fx_dimensional_table  %>% 
+                        filter(Calendar.Year == 2020)
+fx_dimensional_table1        
+```
+
+```{r vscode={'languageId': 'r'}}
+# join fact_table and fx_dimension
+prices1 = fact_table3 %>%
+           left_join(fx_dimensional_table1 %>% 
+           select(CountryCode, average_fx), by = "CountryCode")
+prices1
+
+```
+```{r vscode={'languageId': 'r'}}
+# filter out double entries
+prices1 = prices1 %>% distinct(CountryCode, .keep_all = TRUE)
+prices1
+
+```
+
+
+```{r vscode={'languageId': 'r'}}
+# join fact_table and country
+prices1 = prices1 %>%
+           inner_join(country_dimension_table %>% 
+           select(CountryCode, CountryName), by = "CountryCode")
+
+prices1 = prices1 %>%
+           inner_join(continent_dimensional_table %>% 
+           select(ContinentCode, ContinentName), by = "ContinentCode")
+prices1
+```
+
+```{r vscode={'languageId': 'r'}}
+# convert price into double
+prices1 = prices1 %>% mutate(R_Price_mp_estimate = as.numeric(R_Price_mp_estimate))
+
+# calculate price in USD
+prices1 = prices1 %>% mutate(PriceUSD = round(R_Price_mp_estimate / average_fx, digits =2))
+prices1
+
+# add price for USA
+
+```
+
+
+
+```{r vscode={'languageId': 'r'}}
+# add price for USA
+
+prices1 <- prices1 %>%
+  mutate(PriceUSD = ifelse(CountryCode == 'USA', R_Price_mp_estimate, PriceUSD))
+prices1
+
+```
+
+##  1.2 Plotting
+
+
+```{r vscode={'languageId': 'r'}}
+# Libraries
+library(ggplot2)
+library(dplyr)
+
+
+```
+
+## Chloropleth Maps
+
+```{r vscode={'languageId': 'r'}}
+# chloropleth maps - get librarys
+
+install.packages("rgdal")
+library(rgdal)
+
+install.packages("leaflet")
+library(leaflet)
+```
+
+```{r vscode={'languageId': 'r'}}
+world_spdf <- readOGR( 
+  dsn= paste0(getwd(),"/DATA/") , 
+  layer="TM_WORLD_BORDERS_SIMPL-0.3",
+  verbose=FALSE
+)
+
+```
+
+```{r vscode={'languageId': 'r'}}
+head(world_spdf@data)
+summary(world_spdf@data)
+
+```
+
+```{r vscode={'languageId': 'r'}}
+# remove duplicates
+prices1 = prices1 %>% distinct(CountryCode, .keep_all = TRUE)
+prices1
+```
+
+
+
+```{r vscode={'languageId': 'r'}}
+# merge prices1 into spatial dataframe
+world_spdf <- merge(world_spdf, prices1, by.x = "ISO3", by.y = "CountryCode", all.x = TRUE)
+```
+
+
+
+
+```{r vscode={'languageId': 'r'}}
+# Prices in USD
+# Numeric palette
+# Define a color palette 
+color_palette <- colorNumeric("YlGn", domain = NULL)
+
+# Define a color for NA values
+na_color <- "lightgray"  # Change this to the color you prefer for NA values
+
+# Create the leaflet map
+m <- leaflet(world_spdf) %>%
+  addTiles() %>%
+  setView(lat = 10, lng = 0, zoom = 2) %>%
+  addPolygons(
+    stroke = FALSE,
+    fillOpacity = 0.5,
+    smoothFactor = 0.5,
+    color = ~color_palette(PriceUSD),
+    fillColor = ~ifelse(is.na(PriceUSD), na_color, color_palette(PriceUSD))
+  )  %>%
+  addLegend( 
+    pal=color_palette, 
+    values=~PriceUSD, 
+    opacity=0.5, 
+    title = "Prices in USD for Cigarettes", 
+    position = "bottomleft")
+
+m
+
+```
+
+
+
+
+```{r vscode={'languageId': 'r'}}
+# Prevalence of Smoking
+# Numeric palette
+# Define a color palette for the non-NA values
+color_palette <- colorNumeric("YlOrRd", domain = NULL)
+
+# Define a color for NA values
+na_color <- "lightgray"  # Change this to the color you prefer for NA values
+
+# Create the leaflet map
+m <- leaflet(world_spdf) %>%
+  addTiles() %>%
+  setView(lat = 10, lng = 0, zoom = 2) %>%
+  addPolygons(
+    stroke = FALSE,
+    fillOpacity = 0.5,
+    smoothFactor = 0.5,
+    color = ~color_palette(M_Est_tob_curr_std),
+    fillColor = ~ifelse(is.na(M_Est_tob_curr_std), na_color, color_palette(M_Est_tob_curr_std))
+  ) %>%
+  addLegend( 
+    pal=color_palette, 
+    values=~PriceUSD, 
+    opacity=0.5, 
+    title = "Prevalence of Smoking in % 2020", 
+    position = "bottomleft")
+
+m
+
+
+```
+
+### Bubble Plots
+
+```{r vscode={'languageId': 'r'}}
+# Librarys
+install.packages("viridis")
+
+library(viridis)
+
+```
+
+
+```{r vscode={'languageId': 'r'}}
+# Bubble Plot Europe - Prevalence and Price
+prices1
+summary(prices1)
+
+# dataset
+data <- prices1 %>% filter(ContinentCode == "EUR")
+
+# Most basic bubble plot
+ggplot(data, aes(x=PriceUSD, y=M_Est_tob_curr_std	, size = R_total_tax_estimate )) +
+    geom_point(alpha=0.7)
+
+# Most basic bubble plot
+data %>%
+  ggplot(aes(x=PriceUSD, y=M_Est_tob_curr_std, size = R_total_tax_estimate)) +
+    geom_point(alpha=0.5, color="darkred") +
+    scale_size(range = c(.1, 10), name="Tax in %") +
+    ylab("Prevalence of Smoking") +
+    xlab("Price in USD") 
+
+```
+
+
+
+```{r vscode={'languageId': 'r'}}
+# Bubble Plot Europe  - Life expectancy, Prices, Mortality
+prices1
+summary(prices1)
+
+# dataset
+data <- prices1 %>% filter(ContinentCode == "EUR")
+
+# Most basic bubble plot
+ggplot(data, aes(x=PriceUSD, y=WHOSIS_000001	, size = M_Est_tob_curr_std, color=NCDMORT3070)) +
+    geom_point(alpha=0.7) +
+    scale_size(range = c(.1, 6), name="Prevalence of Smoking") +
+    scale_color_continuous(name = "Prob.of.Dying") + 
+    ylab("Life Expectancy at Birth") +
+    xlab("Price in USD") 
+
+```

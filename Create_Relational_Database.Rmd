@@ -14,7 +14,7 @@ jupyter:
 
 # Creating the Relational Database
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 ## PROCESS
 # widen the table 
 # widen every table and clean them up
@@ -37,68 +37,67 @@ jupyter:
 
 ## 0 Reading CSVs
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 library(tidyverse)
 library(visdat)
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 cost <- read.csv("3. cost_of_cigarettes_2020_WHO.csv")
-#5. National taxes on a pack of 20 cigarettes.csv
+taxes <- read.csv("5. National taxes on a pack of 20 cigarettes.csv")
 death <- read.csv("6. Prob_dying_diseases.csv")
 smoking_prev <- read.csv("8. Age-standardized estimates of current tobacco use, tobacco smoking and cigarette smoking.csv")
 life_expectancy <- read.csv("9. Life expectancy WHO.csv")
+riskfactors <- read.csv("11.number-of-deaths-by-risk-factor.csv")
 exchange_rates <- read.csv("exchange_rates.csv")
 ```
 
 ##  1.1 Widening and Cleaning Smoking Prevalance
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting rid of empty columns
 empty_columns <- colSums(is.na(smoking_prev) | smoking_prev == "") == nrow(smoking_prev)
 smoking_prev_1 <- smoking_prev[, !empty_columns]
 smoking_prev_1
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting rid of redundant columns. We are only interested in the codes and the final values
 smoking_prev_2 <- smoking_prev_1 %>%
-  select(-ValueType, -Location.type, -Period.type, -IndicatorCode, -ParentLocation, -Location, -Dim1.type, -Dim1, -FactValueNumeric, -FactComments, -Language, -DateModified, -IsLatestYear)
+  select(-ValueType, -Location.type, -Period.type, -Indicator, -ParentLocation, -Location, -Dim1.type, -Dim1, -FactValueNumeric, -FactComments, -Language, -DateModified, -IsLatestYear)
 smoking_prev_2
+
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Making the table longer
 smoking_prev_3 <- smoking_prev_2 %>%
-    spread(key = Indicator,
+    spread(key = IndicatorCode,
           value = "Value") %>%
-    rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period, GenderCode = Dim1ValueCode) %>%
-    rename("Estimate current cigarette smoking prevalence %" = "Estimate of current cigarette smoking prevalence (%) (age-standardized rate)") %>%
-    rename("Estimate current tobacco smoking prevalence %" = "Estimate of current tobacco smoking prevalence (%) (age-standardized rate)") %>%
-    rename("Estimate current tobacco use prevalence %" = "Estimate of current tobacco use prevalence (%) (age-standardized rate)")
+    rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period, GenderCode = Dim1ValueCode)
 smoking_prev_3
 ```
 
 ## 1.2 Widening and Cleaning Cost
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting rid of empty columns
 empty_columns <- colSums(is.na(cost) | cost == "") == nrow(cost)
 cost_1 <- cost[, !empty_columns]
 cost_1 %>% head(2)
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting rid of redundant columns. We are only interested in the codes and the final values
 cost_2 <- cost_1 %>%
-  select(-ValueType, -Location.type, -Period.type, -IndicatorCode, -ParentLocation, -Location, -FactValueNumeric, -FactValueTranslationID, -Language, -DateModified, -IsLatestYear)
+  select(-ValueType, -Location.type, -Period.type, -Indicator, -ParentLocation, -Location, -FactValueNumeric, -FactValueTranslationID, -Language, -DateModified, -IsLatestYear)
 cost_2
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Making the table longer
 cost_3 <- cost_2 %>%
-    spread(key = Indicator,
+    spread(key = IndicatorCode,
           value = "Value") %>%
     rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period)
 cost_3
@@ -106,58 +105,80 @@ cost_3
 
 ## 1.3 Widening and Cleaning Death
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting rid of empty columns
 empty_columns <- colSums(is.na(death) | death == "") == nrow(death)
 death_1 <- death[, !empty_columns]
 death_1
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting rid of redundant columns. We are only interested in the codes and the final values
 death_2 <- death_1 %>%
-  select(-IndicatorCode, -ValueType,  -ParentLocation, -Location.type, -Location, -Period.type, -Dim1.type, -Dim1, -Value, -Language, -DateModified, -FactValueNumericLow, -FactValueNumericHigh, -IsLatestYear)
+  select(-Indicator, -ValueType,  -ParentLocation, -Location.type, -Location, -Period.type, -Dim1.type, -Dim1, -Value, -Language, -DateModified, -FactValueNumericLow, -FactValueNumericHigh, -IsLatestYear)
 death_2
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Making the table longer
 death_3 <- death_2 %>%
-    spread(key = Indicator,
+    spread(key = IndicatorCode,
           value = "FactValueNumeric") %>%
-    rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period, GenderCode = Dim1ValueCode) %>%
-    rename("Probability (%) of dying" = "Probability (%) of dying between age 30 and exact age 70 from any of cardiovascular disease, cancer, diabetes, or chronic respiratory disease")
+    rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period, GenderCode = Dim1ValueCode) 
 death_3
 ```
 
+## 1.4 Widening and Cleaning Life Expectancy
 
-```{r}
+```{r vscode={'languageId': 'r'}}
+life_expectancy
+```
+
+```{r vscode={'languageId': 'r'}}
 # Getting rid of empty columns
 empty_columns <- colSums(is.na(life_expectancy) | life_expectancy == "") == nrow(life_expectancy)
 life_expectancy_1 <- life_expectancy[, !empty_columns]
 life_expectancy_1
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting rid of redundant columns. We are only interested in the codes and the final values
 life_expectancy_2 <- life_expectancy_1 %>%
-  select(-IndicatorCode, -ValueType,  -ParentLocation, -Location.type, -Location, -Period.type, -Dim1.type, -Dim1, -Value, -Language, -DateModified, -IsLatestYear)
+  select(-Indicator, -ValueType,  -ParentLocation, -Location.type, -Location, -Period.type, -Dim1.type, -Dim1, -Value, -Language, -DateModified, -IsLatestYear)
 life_expectancy_2
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Making the table longer
 life_expectancy_3 <- life_expectancy_2 %>%
-    spread(key = Indicator,
+    spread(key = IndicatorCode,
           value = "FactValueNumeric") %>%
     rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period, GenderCode = Dim1ValueCode) 
 life_expectancy_3
 ```
 
+## 1.5 Widening and Cleaning Taxes
 
+```{r vscode={'languageId': 'r'}}
+# Getting rid of empty columns
+empty_columns <- colSums(is.na(taxes) | taxes == "") == nrow(taxes)
+taxes_1 <- taxes[, !empty_columns]
+```
 
+```{r vscode={'languageId': 'r'}}
+taxes_2 <- taxes_1 %>%
+    select(-ValueType, -Location.type, -Period.type, -Indicator, -ParentLocation, -Location, -FactValueNumeric, -Language, -DateModified, -IsLatestYear, -FactValueTranslationID)
+taxes_2
+```
 
-
+```{r vscode={'languageId': 'r'}}
+# Making the table longer
+taxes_3 <- taxes_2 %>%
+    spread(key = IndicatorCode,
+          value = "Value") %>%
+    rename(ContinentCode = ParentLocationCode, CountryCode = SpatialDimValueCode, Year = Period) 
+taxes_3
+```
 
 ## 2.0 Creating Dimensional Tables
 
@@ -167,25 +188,27 @@ life_expectancy_3
 
 In order to create the country dimension table, the unique combinations of country, country code and continent code of each table has to be obtained. Then these combinations need to be checked against each other to ensure that each code relate to the same country. In order to this, the distinct combinations will be joined together to the shared code with full outer joints so that every code can be considered. Then the "get_unique_name" function has been created to check whether the country names are the same, and if not to result "Conflict". 
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting country, continent code, country code combinations
 smoking_countries <- smoking_prev_1 %>% distinct(SpatialDimValueCode, Location, ParentLocationCode) 
 cost_countries <- cost_1 %>% distinct(SpatialDimValueCode, Location, ParentLocationCode) 
 death_countries <- death_1 %>% distinct(SpatialDimValueCode, Location, ParentLocationCode) 
 life_countries <- life_expectancy_1 %>% distinct(SpatialDimValueCode, Location, ParentLocationCode)
+taxes_countries <- taxes_1 %>% distinct(SpatialDimValueCode, Location, ParentLocationCode)
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 countries <- full_join(smoking_countries, death_countries, by = "SpatialDimValueCode")
 countries <- full_join(countries, life_countries, by = "SpatialDimValueCode")
 countries <- full_join(countries, cost_countries, by = "SpatialDimValueCode")
+countries <- full_join(countries, taxes_countries, by = "SpatialDimValueCode")
 countries
 ```
 
-```{r}
-get_unique_name = function(item_1, item_2, item_3, item_4) {
-    """Returns item if all items the same, if not gives conflict. If all NA's gives NA"""
-    item_og = c(item_1, item_2, item_3, item_4)
+```{r vscode={'languageId': 'r'}}
+get_unique_name = function(item_1, item_2, item_3, item_4, item_5) {
+   # """Returns item if all items the same, if not gives conflict. If all NA's gives NA"""
+    item_og = c(item_1, item_2, item_3, item_4, item_5)
 
     unique_items <- unique(na.omit(item_og))
     num_unique_items <- length(unique_items)
@@ -196,39 +219,40 @@ get_unique_name = function(item_1, item_2, item_3, item_4) {
 }
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Mutating to get the unique country name and continent code and general cleaning
 country_dimension_table <- countries %>% 
     rowwise() %>%
-    mutate(CountryName = get_unique_name(Location.x, Location.y, Location.x.x, Location.y.y)) %>%
-    mutate(ContinentCode = get_unique_name(ParentLocationCode.x, ParentLocationCode.y, ParentLocationCode.x.x, ParentLocationCode.y.y)) %>%
+    mutate(CountryName = get_unique_name(Location.x, Location.y, Location.x.x, Location.y.y, Location)) %>%
+    mutate(ContinentCode = get_unique_name(ParentLocationCode.x, ParentLocationCode.y, ParentLocationCode.x.x, ParentLocationCode.y.y, ParentLocationCode)) %>%
     select(SpatialDimValueCode, CountryName, ContinentCode) %>%
     rename(CountryCode = SpatialDimValueCode)
 country_dimension_table
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # There are no conflicts, which means each code relate to a country that is consistent in all tables
 country_dimension_table %>% filter(is.na(CountryName) | CountryName == "Conflict" | ContinentCode == "Conflict" | is.na(ContinentCode))
 ```
 
 ## 2.2 Years table
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting the unique years into a dataframe
 smoking_years <- smoking_prev_1$Period %>% unique()
 cost_years <- cost_1$Period %>% unique()
 death_years <- death_1$Period %>% unique()
 life_years <- life_expectancy_1$Period %>% unique()
+taxes_years <- taxes_1$Period %>% unique()
 
-years_dimensional_table <- data.frame(Years = c(smoking_years, cost_years, death_years, life_years)) %>% unique() %>% arrange(Years)
+years_dimensional_table <- data.frame(Years = c(smoking_years, cost_years, death_years, life_years, taxes_years)) %>% unique() %>% arrange(Years)
                                                                                                            
 years_dimensional_table
 ```
 
 ## 2.3 Gender
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting unique combinations of gendercode and gender
 smoking_gender <- smoking_prev_1 %>% distinct(Dim1, Dim1ValueCode) 
 death_gender <- death_1 %>% distinct(Dim1, Dim1ValueCode) 
@@ -236,17 +260,17 @@ life_gender <- life_expectancy_1 %>% distinct(Dim1, Dim1ValueCode)
 life_gender
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 genders <- full_join(smoking_gender, death_gender, by = "Dim1ValueCode")
 genders <- full_join(genders, life_gender, by = "Dim1ValueCode")
 genders
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Mutating to get the unique genders and continent code and general cleaning
 gender_dimension_table <- genders %>% 
     rowwise() %>%
-    mutate(Gender = get_unique_name(Dim1.x, Dim1.y, Dim1, NA)) %>%
+    mutate(Gender = get_unique_name(Dim1.x, Dim1.y, Dim1, NA, NA)) %>%
     select(Dim1ValueCode, Gender) %>%
     rename(GenderCode = Dim1ValueCode)
 gender_dimension_table
@@ -257,81 +281,165 @@ gender_dimension_table
 
 The same process that has been done to countries is done here. 
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Getting unique combinations of continent code and continents
 smoking_continents <- smoking_prev_1 %>% distinct(ParentLocationCode, ParentLocation) 
 cost_continents <- cost_1 %>% distinct(ParentLocationCode, ParentLocation) 
 death_continents <- death_1 %>% distinct(ParentLocationCode, ParentLocation) 
 life_continents <- life_expectancy_1 %>% distinct(ParentLocationCode, ParentLocation)
+taxes_continents <- taxes_1 %>% distinct(ParentLocationCode, ParentLocation)
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 continents <- full_join(smoking_continents, cost_continents, by = "ParentLocationCode")
 continents <- full_join(continents, death_continents, by = "ParentLocationCode")
 continents <- full_join(continents, life_continents, by = "ParentLocationCode")
+continents <- full_join(continents, taxes_continents, by = "ParentLocationCode")
 continents
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Mutating to get the unique continents and general cleaning
 continent_dimensional_table <- continents %>% 
     rowwise() %>%
-    mutate(ContinentName = get_unique_name(ParentLocation.x, ParentLocation.y, ParentLocation.x.x, ParentLocation.y.y)) %>%
+    mutate(ContinentName = get_unique_name(ParentLocation.x, ParentLocation.y, ParentLocation.x.x, ParentLocation.y.y, ParentLocation)) %>%
     select(ParentLocationCode, ContinentName) %>%
     rename(ContinentCode = ParentLocationCode)
 continent_dimensional_table
 ```
 
+## 2.5 Indicators Dimensional Table
 
-## 2.5 Exchange Rates
+```{r vscode={'languageId': 'r'}}
+# Getting the unique years into a dataframe
+smoking_indicators <- smoking_prev_1 %>%
+  select(Indicator, IndicatorCode) %>%  
+  distinct()
+cost_indicators <- cost_1 %>%
+  select(Indicator, IndicatorCode) %>%  
+  distinct()
+death_indicators <- death_1 %>%
+  select(Indicator, IndicatorCode) %>%  
+  distinct()
+tax_indicators <- taxes_1 %>%
+  select(Indicator, IndicatorCode) %>%  
+  distinct() 
+life_indicators <- life_expectancy_1 %>%
+  select(Indicator, IndicatorCode) %>%  
+  distinct() 
 
-```{r}
+
+indicators_dimensional_table <- bind_rows(smoking_indicators, cost_indicators, death_indicators, tax_indicators, life_indicators) %>% distinct()                         
+                                                                                                           
+indicators_dimensional_table
+```
+
+## 2.6 Exchange Rates Dimensional Table
+
+```{r vscode={'languageId': 'r'}}
 # Select only the columns we need 
 exchange_rates <- exchange_rates %>%
   select(Country, Currency, Calendar.Year, Exchange.Rate)
-exchange_rates
 
 # group by country and year, average the exchange rate
 exchange_rates_grouped <- exchange_rates %>%
   group_by(Country, Calendar.Year)  %>%
   summarize(average_fx = round(mean(Exchange.Rate), 2))
-exchange_rates_grouped 
 
-```
-```{r}
-# add country code
+# rename country to CountryaName, lowercase country names
 exchange_rates_grouped  <- exchange_rates_grouped  %>% mutate(Country = tolower(Country))
-colnames(exchange_rates_grouped)[colnames(exchange_rates_grouped) == "Country"] <- "Location.x"
+colnames(exchange_rates_grouped)[colnames(exchange_rates_grouped) == "Country"] <- "CountryName"
 
+# join tables and add country code
 exchange_rates_grouped <- exchange_rates_grouped %>%
   left_join(
-    countries %>% select(SpatialDimValueCode, Location.x) %>%
-    mutate(Location.x = tolower(Location.x)),
-    by = "Location.x")
-exchange_rates_grouped
+    country_dimension_table %>% select(CountryCode, CountryName) %>%
+    mutate(CountryName = tolower(CountryName)),
+    by = "CountryName")
 
+# check which country names did not match and count
+empty_country_codes <- exchange_rates_grouped %>%
+  filter(is.na(CountryCode) | CountryCode == "") %>% 
+  select(CountryName)  %>% 
+  group_by(CountryName) %>%
+  summarize(EmptyEntriesCount = n())
+empty_country_codes
 ```
 
+```{r vscode={'languageId': 'r'}}
+# get distinctt counties as defined by WHO 
+distinct_countries_WHO = country_dimension_table %>% distinct(CountryName)  %>%  arrange(CountryName)
+
+ # export data and match manually 
+#write.csv(distinct_countries_WHO, file = 'who-countries.csv', row.names = FALSE)
+#write.csv(empty_country_codes, file = 'fx-countries.csv', row.names = FALSE)
+
+# read in manually matched countries
+country_match = read.csv('fx-countries.csv')
+
+# clean up the empty values
+exchange_rates_grouped$CountryName = ifelse(exchange_rates_grouped$CountryName %in% country_match$CountryNameFX,    
+                                        country_match$CountryNameWHO[match(exchange_rates_grouped$CountryName, country_match$CountryNameFX)],
+                                        exchange_rates_grouped$CountryName)
+exchange_rates_grouped
+```
+
+```{r vscode={'languageId': 'r'}}
+# lowercase country names
+exchange_rates_grouped  <- exchange_rates_grouped  %>% mutate(CountryName = tolower(CountryName))
+
+# join tables and add missing country code
+exchange_rates_grouped <- exchange_rates_grouped %>%
+  left_join(
+    country_dimension_table %>% select(CountryCode, CountryName) %>%
+    mutate(CountryName = tolower(CountryName)),
+    by = "CountryName")
+
+# drop CountryCode with NAs, Rename second CountryCode column
+exchange_rates_grouped <- exchange_rates_grouped %>%
+  select(-CountryCode.x) %>%  
+  rename(CountryCode = CountryCode.y) 
+
+exchange_rates_grouped
+```
+
+```{r vscode={'languageId': 'r'}}
+# check which country names did not match and count - the ones that could not be matched manually
+empty_country_codes <- exchange_rates_grouped %>%
+  filter(is.na(CountryCode) | CountryCode == "") %>% 
+  select(CountryName)  %>% 
+  group_by(CountryName) %>%
+  summarize(EmptyEntriesCount = n())
+empty_country_codes  
+```
+
+```{r vscode={'languageId': 'r'}}
+# and primary key to dimension_table
+fx_dimension_table <- exchange_rates_grouped %>%
+  mutate(
+  ID = ifelse(is.na(CountryCode), paste("NA", row_number(), Calendar.Year, sep = "_"), paste(CountryCode, Calendar.Year, sep = "_")))
+fx_dimensional_table
+```
 
 ## 3.0 Making Fact Tables - Subsets (Trial)
 
 
-The smoking prevalence, life expectancy and probability of death tables will be combined to one fact table. The cost table will be kept separate as it doesn't have gender. For the trial, a combination that has a value in each table has been chosen. In this case, continent in Africa, ZWE as country and both sexes as gender. This way we can check that the values from each table connects properly. As all the values should be in one row for this specific combination. 
+The smoking prevalence, life expectancy and probability of death tables will be combined to one fact table first. The cost table will be joined at the end as it doesn't have gender. For the trial, a combination that has a value in each table has been chosen. In this case, continent in Africa, ZWE as country and both sexes as gender. This way we can check that the values from each table connects properly. As all the values should be in one row for this specific combination. 
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 # Creating the subset for the specific combination (Contient = AFR, Country = ZWE, Gender = BTSX)
 smoking_prev_3_subset <- smoking_prev_3 %>% filter((ContinentCode == "AFR") & (CountryCode == "ZWE") & (GenderCode == "BTSX") & (Year == 2010))
 life_expectancy_3_subset <- life_expectancy_3 %>% filter((ContinentCode == "AFR") & (CountryCode == "ZWE") & (GenderCode == "BTSX") & (Year == 2010))
 death_3_subset <- death_3 %>% filter((ContinentCode == "AFR") & (CountryCode == "ZWE") & (GenderCode == "BTSX") & (Year == 2010))
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 smoking_prev_3_subset
 life_expectancy_3_subset
 death_3_subset
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 trial_2 <- full_join(smoking_prev_3_subset, life_expectancy_3_subset, by = c("ContinentCode", "CountryCode", "Year", "GenderCode"))
 trial_3 <- full_join(trial_2, death_3_subset, by = c("ContinentCode", "CountryCode", "Year", "GenderCode"))
 trial_3
@@ -339,58 +447,161 @@ trial_3
 ## it works - all in one row 
 ```
 
-## 3.1 Joining Tables - Full set
+## 3.1 Joining Tables - Smoking + Probability of death + Life Expectancy
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 smoke_lifexpect <- full_join(smoking_prev_3, life_expectancy_3, by = c("ContinentCode", "CountryCode", "Year", "GenderCode"))
 smoke_lifexpect_death <- full_join(smoke_lifexpect, death_3, by = c("ContinentCode", "CountryCode", "Year", "GenderCode"))
 smoke_lifexpect_death
 ```
 
-## 4.0 Creating Primary Keys
+## 4.0 Creating Final Fact table
 
 
-We are going to keep the cost table separate to the smoke_lifexpect_death table as the cost table does not have a gender. 
+### 4.1 Adding Primary key to cost table
 
 
-### 4.1 Table 1 - Costs of tobacco
+Adding "B" at the end to cost table so that all the costs will be in the both sex rows. 
 
-```{r}
-cost_3
+```{r vscode={'languageId': 'r'}}
+nrow(cost_3)
 ```
 
-```{r}
+It needs to be verified that all 1301 rows are accounted for in the table made. 
+
+```{r vscode={'languageId': 'r'}}
 cost_cigs <- cost_3 %>%
-  mutate(CostID = paste(CountryCode, Year),
-         CostID = str_replace_all(CostID, " ", "")) %>%
-  select(CostID, everything(), -ContinentCode, -CountryCode, -Year)
+  mutate(ID = paste(CountryCode, Year, "B"),
+         ID = str_replace_all(ID, " ", "")) %>%
+  select(ID, everything())
 
 cost_cigs
 ```
 
-### 4.2 Table 2 - Smoking Prevalence, Life Expectancy, Probablity of Death
+### 4.2 Adding Primary key to taxes table
 
-```{r}
+```{r vscode={'languageId': 'r'}}
+taxes_tobacco <- taxes_3 %>%
+  mutate(ID = paste(CountryCode, Year, "B"),
+         ID = str_replace_all(ID, " ", "")) %>%
+  select(ID, everything())
+
+taxes_tobacco
+```
+
+### 4.3 Adding Primary Key to Smoking Prevalence, Life Expectancy, Probablity of Death Table
+
+```{r vscode={'languageId': 'r'}}
 smoke_lifexpect_death_wID <- smoke_lifexpect_death %>%
   mutate(ID = paste(CountryCode, Year, substr(GenderCode, 1, 1)),
          ID = str_replace_all(ID, " ", "")) %>%
-  select(ID, everything(), -ContinentCode, -CountryCode, -Year, -GenderCode)
+  select(ID, everything())
 
-smoke_lifexpect_death_wID
+smoke_lifexpect_death_wID #12567
 ```
 
-```{r}
+### 4.4 Creating final Fact table
+
+
+We will do a left join between smoking data and cost data, as there is no point looking into the cost of cigarettes if the information on smoking is not available. 
+
+```{r vscode={'languageId': 'r'}}
+fact_table_0 <- left_join(smoke_lifexpect_death_wID, cost_cigs, by = c("ID", "ContinentCode","CountryCode", "Year"))
+head(fact_table_0)
+nrow(fact_table_0) # It is 12567 which is the same as the smoking data so OK
+```
+
+```{r vscode={'languageId': 'r'}}
+fact_table_1 <- left_join(fact_table_0, taxes_tobacco, by = c("ID", "ContinentCode","CountryCode", "Year"))
+head(fact_table_1)
+nrow(fact_table_1) # It is 12567 which is the same as the smoking data so OK
+```
+
+```{r vscode={'languageId': 'r'}}
+fact_table_1 %>% glimpse()
+```
+
+```{r vscode={'languageId': 'r'}}
+fact_table_1 %>% filter(is.na(`GenderCode`)) %>% head()
+# Checking all available data from smoking is there - OK 
+```
+
+```{r vscode={'languageId': 'r'}}
+fact_table_1 %>% 
+    filter(`R_Curr_mp.y` != `R_Curr_mp.x`) %>%
+    select(-ContinentCode, -CountryCode, -Year, -GenderCode)
+```
+
+```{r vscode={'languageId': 'r'}}
+fact_table_1 %>% 
+    filter(`R_Price_mp_estimate.x` != `R_Price_mp_estimate.y`) %>%
+    select(-ContinentCode, -CountryCode, -Year, -GenderCode)
+    
+```
+
+```{r vscode={'languageId': 'r'}}
+fact_table_2 <- fact_table_1 %>% 
+    select(-"R_Price_mp_estimate.x", -"R_Curr_mp.x") %>%
+    rename("R_Price_mp_estimate" = "R_Price_mp_estimate.y", "R_Curr_mp" = "R_Curr_mp.y")
+fact_table_2
+```
+
+```{r vscode={'languageId': 'r'}}
+final_fact_table <- fact_table_2 %>%
+    select(-M_Est_cig_curr_std, -M_Est_smk_curr_std, -WHOSIS_000015, -R_Curr_mp, -R_Sp_excise_estimate, -R_Ad_val_estimate, -R_VAT_estimate, -R_imp_duty_estimate, -R_Other_estimate, -ContinentCode)
+
+final_fact_table
+# Number of columns ok - 11 and 12 from the 3 tables and then remove 2 duplicates - 21. And then removed some stuff.
+```
+
+## 5.0 Saving all the tables
+
+```{r vscode={'languageId': 'r'}}
+write.csv(final_fact_table, file = "fact-table.csv", row.names = FALSE)
+```
+
+```{r vscode={'languageId': 'r'}}
+write.csv(country_dimension_table, file = "country_dimension_table.csv", row.names = FALSE)
+write.csv(years_dimensional_table, file = "years_dimensional_table.csv", row.names = FALSE)
+write.csv(gender_dimension_table, file = "gender_dimension_table.csv", row.names = FALSE)
+write.csv(continent_dimensional_table, file = "continent_dimensional_table.csv", row.names = FALSE)
+write.csv(indicators_dimensional_table, file = "indicators_dimensional_table.csv", row.names = FALSE)
+write.csv(fx_dimensional_table, file = "fx_dimensional_table.csv", row.names = FALSE)
 
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 
 ```
 
-```{r}
+```{r vscode={'languageId': 'r'}}
 
 ```
 
-```{r}
+## 6.0 Metatable
 
+```{r vscode={'languageId': 'r'}}
+# Filter the original data frame to keep only the selected columns and the CountryCode
+filtered_df <- final_fact_table %>%
+  select(-ID, -ContinentCode, -Year)
+
+# Gather the selected columns to calculate counts for each country and each column
+gathered_df <- filtered_df %>%
+  gather(key = "Column_Name", value = "Value", -CountryCode, -GenderCode, na.rm = TRUE)
+
+# Count the occurrences for each CountryCode, Column_Name pair
+counted_df <- gathered_df %>%
+  group_by(CountryCode, GenderCode, Column_Name) %>%
+  summarise(Count = n())
+
+# Spread the data to have column names as columns and counts as values
+metadata_df <- counted_df %>%
+  spread(key = Column_Name, value = Count, fill = 0)
+
+metadata_df 
+
+```
+
+```{r vscode={'languageId': 'r'}}
+#write.csv(metadata_df, file = "Final Tables/metadata.csv", row.names = FALSE)
 ```

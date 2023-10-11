@@ -143,7 +143,7 @@ library(leaflet)
 
 ```{r vscode={'languageId': 'r'}}
 world_spdf <- readOGR( 
-  dsn= paste0(getwd(),"/DATA/") , 
+  dsn= paste0(getwd(),"/GEODATA/") , 
   layer="TM_WORLD_BORDERS_SIMPL-0.3",
   verbose=FALSE
 )

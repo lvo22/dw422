@@ -1,0 +1,13 @@
+﻿Readable name,IndicatorCode,type,description
+ID,Created,Character,"created by  countrycode,year and first letter of gendercode"
+CountryCode,SpatialDimValueCode,Character,code of each country
+ContinentCode,ParentLocationCode,factor,code of continent
+Year,Period ,Integer,year of the data
+GenderCode,Dim1ValueCode,Character, gender of person
+TobaccoPrevalence,M_Est_tob_curr_std,numeric,Estimate of current tobacco use prevalence (%) (age-standardized rate)
+LifeExpectancy,WHOSIS_000001,numeric,Life expectancy at birth (years)
+Mortality,NCDMORT3070,numeric,"Probability (%) of dying between age 30 and exact age 70 from any of cardiovascular disease, cancer, diabetes, or chronic respiratory disease"
+LowestPricEstTobacco,R_Price_lowest_cost_estimate,numeric,Cheapest brand of cigarettes - price in currency reported
+PremiumPricEstTobacco,R_Price_premium_estimate,numeric,Premium brand of cigarettes - price in currency reported
+MediumPriceTobaccon,R_Price_mp_estimate,numeric,Most sold brand of cigarettes - price in currency reported
+TotalTax,R_total_tax_estimate,numeric,Most sold brand of cigarettes - taxes as a % of price - total tax

@@ -678,7 +678,7 @@ nz_data_whole_2 <- nz_data_whole %>%
     rename(TobaccoPrevalence_who = TobaccoPrevalence, MediumPriceEstTobacco_who = MediumPriceEstTobacco) %>%
     mutate(TobaccoPrevalence = ifelse(is.na(AveragePrev), TobaccoPrevalence_who, AveragePrev),
           MediumPriceEstTobacco = ifelse(is.na(cost_mean), MediumPriceEstTobacco_who, cost_mean)) %>%
-    select(Year, cost_mean, MediumPriceEstTobacco_who, MediumPriceEstTobacco, AveragePrev, TobaccoPrevalence_who, TobaccoPrevalence)
+    select(-cost_mean, -AveragePrev)
 ```
 
 Removing the NZL data from full fact table and stacking the NZ data onto it. 
